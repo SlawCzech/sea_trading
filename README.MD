@@ -49,3 +49,21 @@
 - class - służą do tworzenia obiektów
 - object - instancja klasy
 
+
+## Examples
+```python
+
+class X:
+  b = 'on class'
+  
+  def __init__(self):
+    self.a = 'on instance'
+    print(self.a)
+    print(X.b)
+    self.a = 're-bound'
+    self.b = 'new one instance'
+    print(self.b)
+    print(X.b)
+    
+
+```
