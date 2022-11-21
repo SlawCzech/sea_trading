@@ -15,22 +15,47 @@ class ShippingContainer:
         return iso6346.create(owner_code=owner_code, serial=str(serial).zfill(6))
 
     @classmethod
-    def create_empty(cls, owner_code):
-        return cls(owner_code, contents=[])
+    def create_empty(cls, owner_code, **kwargs):
+        return cls(owner_code, contents=[], **kwargs)
 
     @classmethod
-    def create_with_items(cls, owner_code, items):
-        return cls(owner_code, contents=list(items))
+    def create_with_items(cls, owner_code, items, **kwargs):
+        return cls(owner_code, contents=list(items), **kwargs)
 
-    def __init__(self, owner_code, contents):
+    def __init__(self, owner_code, contents, **kwargs):
         self.owner_code = owner_code
         self.contents = contents
-        self.bic = ShippingContainer._make_bic_code(owner_code=owner_code, serial=ShippingContainer._generate_serial())
+        self.bic = type(self)._make_bic_code(owner_code=owner_code, serial=ShippingContainer._generate_serial())
         # self.serial = ShippingContainer._generate_serial()
 
 
-sc = ShippingContainer('ELO', ['drugs'])
+class RefrigeratedShippingContainer(ShippingContainer):
+    MAX_CELSIUS = 4.0
 
-print(sc.bic)
+    def __init__(self, owner_code, contents, *, celsius, **kwargs):
+        super().__init__(owner_code, contents)
+
+        self.celsius = celsius
+
+    @property
+    def celsius(self):
+        return self._celsius
+
+    @celsius.setter
+    def celsius(self, new_celsius):
+        if new_celsius > RefrigeratedShippingContainer.MAX_CELSIUS:
+            raise ValueError('Too hot')
+        self._celsius = new_celsius
+
+
+    @staticmethod
+    def _make_bic_code(owner_code, serial):
+        return iso6346.create(owner_code=owner_code, serial=str(serial).zfill(6), category='R')
+
+
+sc = ShippingContainer('ELO', ['drugs'])
+rsc = RefrigeratedShippingContainer('ELO', ['drugs'], celsius=3.0)
+
+print(rsc.bic)
 # print(ShippingContainer.next_serial)
 # print(sc.next_serial)
