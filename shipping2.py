@@ -83,7 +83,7 @@ class RefrigeratedShippingContainer(ShippingContainer):
         )
 
     def _calc_volume(self):
-        return super().volume_ft3 - RefrigeratedShippingContainer.FRIDGE_VOLUME_FT3
+        return super()._calc_volume() - RefrigeratedShippingContainer.FRIDGE_VOLUME_FT3
 
 
 class HeatedRefrigeratedShippingContainer(RefrigeratedShippingContainer):
