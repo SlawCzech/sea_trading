@@ -15,7 +15,10 @@ class ShippingContainer:
 
     @staticmethod
     def _make_bic_code(owner_code, serial):
-        return iso6346.create(owner_code=owner_code, serial=str(serial).zfill(6))
+        return iso6346.create(
+            owner_code=owner_code,
+            serial=str(serial).zfill(6)
+        )
 
     @classmethod
     def create_empty(cls, owner_code, length_ft, **kwargs):
@@ -23,18 +26,23 @@ class ShippingContainer:
 
     @classmethod
     def create_with_items(cls, owner_code, length_ft, items, **kwargs):
-        return cls(owner_code, contents=list(items), **kwargs)
+        return cls(owner_code, length_ft, contents=list(items), **kwargs)
 
     def __init__(self, owner_code, length_ft, contents, **kwargs):
-        self.length_ft = length_ft
         self.owner_code = owner_code
+        self.length_ft = length_ft
         self.contents = contents
-        self.bic = type(self)._make_bic_code(owner_code=owner_code, serial=ShippingContainer._generate_serial())
-        # self.serial = ShippingContainer._generate_serial()
+        self.bic = type(self)._make_bic_code(
+            owner_code=owner_code,
+            serial=ShippingContainer._generate_serial()
+        )
+
+    def _calc_volume(self):
+        return ShippingContainer.HEIGHT_FT * ShippingContainer.WIDTH_FT * self.length_ft
 
     @property
     def volume_ft3(self):
-        return ShippingContainer.HEIGHT_FT * ShippingContainer.WIDTH_FT * self.length_ft
+        return self._calc_volume()
 
 
 class RefrigeratedShippingContainer(ShippingContainer):
@@ -43,7 +51,6 @@ class RefrigeratedShippingContainer(ShippingContainer):
 
     def __init__(self, owner_code, length_ft, contents, *, celsius, **kwargs):
         super().__init__(owner_code, length_ft, contents)
-
         self.celsius = celsius
 
     @property
@@ -51,10 +58,13 @@ class RefrigeratedShippingContainer(ShippingContainer):
         return self._celsius
 
     @celsius.setter
-    def celsius(self, new_celsius):
-        if new_celsius > RefrigeratedShippingContainer.MAX_CELSIUS:
-            raise ValueError('Too hot')
-        self._celsius = new_celsius
+    def celsius(self, temperature):
+        self._set_celsius(temperature)
+
+    def _set_celsius(self, temperature):
+        if temperature > RefrigeratedShippingContainer.MAX_CELSIUS:
+            raise ValueError('Temperature too hot!')
+        self._celsius = temperature
 
     @property
     def fahrenheit(self):
@@ -66,31 +76,30 @@ class RefrigeratedShippingContainer(ShippingContainer):
 
     @staticmethod
     def _make_bic_code(owner_code, serial):
-        return iso6346.create(owner_code=owner_code, serial=str(serial).zfill(6), category='R')
+        return iso6346.create(
+            owner_code=owner_code,
+            serial=str(serial).zfill(6),
+            category='R'
+        )
 
-    @property
-    def volume_ft3(self):
+    def _calc_volume(self):
         return super().volume_ft3 - RefrigeratedShippingContainer.FRIDGE_VOLUME_FT3
 
 
 class HeatedRefrigeratedShippingContainer(RefrigeratedShippingContainer):
     MIN_CELSIUS = -20
 
-    @RefrigeratedShippingContainer.celsius.setter
-    def celsius(self, value):
-        if not (HeatedRefrigeratedShippingContainer.MIN_CELSIUS <= value <= RefrigeratedShippingContainer.MAX_CELSIUS):
-            raise ValueError('Temperature out of range.')
-        # self._celsius = value
-        RefrigeratedShippingContainer.celsius.fset(self, value)
+    def _set_celsius(self, value):
+        if HeatedRefrigeratedShippingContainer.MIN_CELSIUS > value:
+            raise ValueError(f'Temperature too cold!')
+        super()._set_celsius(value)
 
-sc = ShippingContainer('ELO', 200, ['drugs'])
-rsc = RefrigeratedShippingContainer('ELO', 200, ['drugs'], celsius=3.0)
-hrsc = HeatedRefrigeratedShippingContainer('ELO', 200, ['drugs'], celsius=3.0)
-rsc2 = RefrigeratedShippingContainer.create_empty('ELO', 200, celsius=3.0)
-# print(rsc.bic)
-# print(ShippingContainer.next_serial)
-# print(sc.next_serial)
+
+sc = ShippingContainer('elo', 200, ['drugs'])
+rsc = RefrigeratedShippingContainer('ELO', 200, ['drugs'], celsius=3)
+hrsc = HeatedRefrigeratedShippingContainer('ELO', 200, ['drugs'], celsius=3)
+
 print(sc.volume_ft3)
 print(rsc.volume_ft3)
-hrsc.celsius = -21
+hrsc.celsius = 2
 print(hrsc.celsius)
